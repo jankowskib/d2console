@@ -14,6 +14,8 @@
 #   limitations under the License.
 #
 
+SCRIPT_DIR = File.dirname(__FILE__) 
+
 # Just to be pretty
 D2TRUE = 1
 D2FALSE = 0
