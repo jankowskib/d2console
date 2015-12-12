@@ -17,12 +17,14 @@
 require 'ffi'
 
 module Storm
-   extend FFI::Library
-   ffi_lib SCRIPT_DIR + "/Storm.dll"
-   ffi_convention :stdcall
-   # DLL_KEYWORD BOOL __stdcall SFileOpenArchive(LPCSTR lpFileName, DWORD dwPriority, DWORD dwFlags, HANDLE *hMPQ); // @266
-   # DLL_KEYWORD BOOL __fastcall SFileCloseArchive(HANDLE hMPQ);  // @252
+  extend FFI::Library
+  ffi_lib SCRIPT_DIR + "/Storm.dll"
+  ffi_convention :stdcall
 
-   attach_function :open_archive, "266", [:string, :uint, :uint, :pointer], :uint # (LPCSTR lpFileName, DWORD dwPriority, DWORD dwFlags, HANDLE *hMPQ)
-   attach_function :close_archive, "252", [:pointer], :uint, {:convention => :fastcall}
+  attach_function :open_archive, "266", [:string, :uint, :uint, :pointer], :uint # (LPCSTR lpFileName, DWORD dwPriority, DWORD dwFlags, HANDLE *hMPQ)
+  attach_function :close_archive, "252", [:pointer], :uint, {:convention => :fastcall}
+  # SRegLoadString(char *keyname, char *valuename, int a3, char *buffer, size_t buffersize)
+  # SRegLoadValue(char *keyname, char *valuename, int a3, int* value)
+  attach_function :reg_load_string, "422", [:string, :string, :uint, :buffer_out, :uint], :uint
+  attach_function :reg_load_value, "423", [:string, :string, :uint, :buffer_out], :uint
 end
