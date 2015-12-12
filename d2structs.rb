@@ -81,5 +81,6 @@ class ClientData < FFI::Struct
           :bnet_callbacks, :pointer,
           :game_pass, [:char, 24], 0x241,
           :skip_to_bnet, :uint8, 0x359,
-          :unk5, :uint16, 0x3C6
+          :unk5, :uint8, 0x35A,
+          :unk6, :uint16, 0x3C6
 end
