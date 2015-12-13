@@ -26,12 +26,6 @@ require_relative 'd2structs'
 
 # Setup external functions
 require_relative 'bindings/Storm' # preload our hacked storm 1st
-Dir.chdir "D:\\Gry\\Diablo II (1.13d org)\\"
-require_relative SCRIPT_DIR + '/bindings/Fog'
-require_relative SCRIPT_DIR + '/bindings/D2Sound'
-require_relative SCRIPT_DIR + '/bindings/D2Lang'
-require_relative SCRIPT_DIR + '/bindings/D2Gfx'
-require_relative SCRIPT_DIR + '/bindings/D2Win'
 require_relative SCRIPT_DIR + '/bindings/Windows'
 
 $client_data = ClientData.new
@@ -49,9 +43,35 @@ end
 class D2Critical < StandardError
 end
 
-# Basic setup for the game, the event stuff is not necessary at all
-# I left it just in case
+
+# Loads the Diablo II DLLs
+# @raise D2Critical if one or more of dlls are not found or failed to load
+def loads_dlls
+  require_relative SCRIPT_DIR + '/bindings/Fog'
+  require_relative SCRIPT_DIR + '/bindings/D2Sound'
+  require_relative SCRIPT_DIR + '/bindings/D2Lang'
+  require_relative SCRIPT_DIR + '/bindings/D2Gfx'
+  require_relative SCRIPT_DIR + '/bindings/D2Win'
+end
+
+# Read the InstallPath key from the registry
+# @return [String] the diablo installation directory
+def get_d2_install_path
+  buffer = FFI::MemoryPointer.new(256)
+  Storm.reg_load_string("Diablo II", "InstallPath", 0, buffer, 256)
+  dir = buffer.read_string
+  buffer.free
+  dir
+end
+
+# Basic setup for the game
+# @note the event stuff is not necessary at all, I left it just in case
 def setup_game
+  path = get_d2_install_path
+  raise "Failed to get d2 installation path" if path.empty?
+  Dir.chdir path
+  loads_dlls
+
   Fog.set_log_prefix("D2")
   Fog.set_error_handler("Diablo II", ErrorCallback, "v1.13d", D2TRUE)
   event = Windows.open_event(2, D2TRUE, "DIABLO_II_OK")
@@ -64,9 +84,9 @@ def setup_game
 end
 
 # returns a query interface for requested game mode
-# @param mode one of GAME_MODE
-# @return Interface function table [result of QueryInteface(ClientData*)]
-# @raise D2Critical if mode is unknown
+# @param mode one of [GameMode]
+# @return [Interface] function table (result of QueryInteface(ClientData*))
+# @raise D2Critical if mode is not handled
 def get_game_mode_fn(mode)
   case mode
   when GameMode[:launcher]
@@ -79,7 +99,7 @@ def get_game_mode_fn(mode)
     require_relative SCRIPT_DIR + '/bindings/D2Multi'
     return D2Multi.query_interface
   else
-    raise D2Critical, "Unknown game mode: " << mode
+    raise D2Critical, "Unsupported game mode: " << mode
   end
 end
 
@@ -101,7 +121,7 @@ def main_thread
     puts "Creating a window..."
     begin
       raise D2Error, "Failed to create a window" unless D2Win.
-      create_window($client_data[:window_mode], GameRes[:res_640x480])
+      create_window($client_data[:window_mode], GameRes[:res_800x600])
       if $client_data[:no_sound] == 0
         puts "Initing sound system..."
         D2Sound.init($client_data[:expansion], D2FALSE)
@@ -140,5 +160,7 @@ begin
   main_thread
 
   # return to previous directory
+  Dir.chdir SCRIPT_DIR
+rescue
   Dir.chdir SCRIPT_DIR
 end
